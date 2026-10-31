@@ -1,121 +1,71 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState } from 'react'
+import { ShoppingCart, Package, History, BarChart3, Settings as SettingsIcon, Store } from 'lucide-react'
 import './App.css'
+import { Checkout } from './views/Checkout'
+import { Products } from './views/Products'
+import { SalesHistory } from './views/SalesHistory'
+import { Reports } from './views/Reports'
+import { SettingsView } from './views/Settings'
+import { useOnlineStatus } from './hooks/useOnlineStatus'
+import { getSettings } from './lib/settingsService'
+import type { Settings } from './lib/types'
+
+export type Tab = 'checkout' | 'products' | 'history' | 'reports' | 'settings'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [tab, setTab] = useState<Tab>('checkout')
+  const [storeName, setStoreName] = useState('')
+  const onlineStatus = useOnlineStatus()
+
+  useEffect(() => {
+    getSettings().then((s) => setStoreName(s.storeName)).catch(() => {})
+  }, [tab])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <header className="app-header">
+        <div className="brand">
+          <Store size={24} />
+          <span>SariPOS</span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+        <nav className="nav" aria-label="Main navigation">
+          <button className={`nav-btn ${tab === 'checkout' ? 'active' : ''}`} onClick={() => setTab('checkout')}>
+            <ShoppingCart />
+            <span>Checkout</span>
+          </button>
+          <button className={`nav-btn ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')}>
+            <Package />
+            <span>Products</span>
+          </button>
+          <button className={`nav-btn ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>
+            <History />
+            <span>Sales</span>
+          </button>
+          <button className={`nav-btn ${tab === 'reports' ? 'active' : ''}`} onClick={() => setTab('reports')}>
+            <BarChart3 />
+            <span>Reports</span>
+          </button>
+          <button className={`nav-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>
+            <SettingsIcon />
+            <span>Settings</span>
+          </button>
+        </nav>
+        <div className="header-right">
+          {storeName ? <span className="store-name" title={storeName}>{storeName}</span> : null}
+          <span className={`status-badge ${onlineStatus}`} title={onlineStatus === 'online' ? 'Online' : 'Offline — checkout still works'}>
+            <span className="status-dot" />
+            {onlineStatus === 'online' ? 'Online' : 'Offline'}
+          </span>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      </header>
+      <main className="app-main">
+        {tab === 'checkout' && <Checkout onNavigate={setTab} />}
+        {tab === 'products' && <Products />}
+        {tab === 'history' && <SalesHistory />}
+        {tab === 'reports' && <Reports />}
+        {tab === 'settings' && <SettingsView onStoreNameChange={setStoreName} />}
+      </main>
+    </div>
   )
 }
 
