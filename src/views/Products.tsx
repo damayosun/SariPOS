@@ -4,7 +4,6 @@ import type { Category, Product } from '../lib/types'
 import { searchProducts, getAllCategories, createProduct, updateProduct, deactivateProduct, activateProduct, validateProductName, validatePricePeso, validateStock, createCategory, deleteCategory } from '../lib/productService'
 import { formatMoney } from '../lib/money'
 import { getStockStatus } from '../lib/stockStatus'
-import { ProductModal } from './ProductModal'
 
 export function Products() {
   const [products, setProducts] = useState<Product[]>([])
@@ -18,9 +17,14 @@ export function Products() {
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    const [prods, cats] = await Promise.all([searchProducts(query, activeCategory), getAllCategories()])
-    setProducts(showInactive ? prods : prods.filter((p) => p.active))
-    setCategories(cats)
+    try {
+      const [prods, cats] = await Promise.all([searchProducts(query, activeCategory), getAllCategories()])
+      setProducts(showInactive ? prods : prods.filter((p) => p.active))
+      setCategories(cats)
+      setError('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load products.')
+    }
   }, [query, activeCategory, showInactive])
 
   useEffect(() => { load() }, [load])
@@ -267,6 +271,8 @@ function CategoryModal({ categories, products, onClose, onChanged }: {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
   const handleAdd = async () => {
     try {
       await createCategory(name)
@@ -278,11 +284,14 @@ function CategoryModal({ categories, products, onClose, onChanged }: {
     }
   }
 
-  const handleDelete = async (id: string, catName: string) => {
-    const count = products.filter((p) => p.categoryId === id).length
-    if (confirm(`Delete category "${catName}"? ${count > 0 ? `${count} product(s) will be moved to no category.` : ''}`)) {
+  const handleDelete = async (id: string) => {
+    try {
       await deleteCategory(id)
+      setConfirmDeleteId(null)
+      setError('')
       onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete category.')
     }
   }
 
@@ -302,17 +311,29 @@ function CategoryModal({ categories, products, onClose, onChanged }: {
               <button className="btn btn-primary" onClick={handleAdd}><Plus size={16} /> Add</button>
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {categories.length === 0 ? (
               <p style={{ color: 'var(--text-muted)' }}>No categories yet.</p>
-            ) : categories.map((c) => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8 }}>
-                <span style={{ fontWeight: 500 }}>{c.name}</span>
-                <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(c.id, c.name)} aria-label={`Delete ${c.name}`}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+            ) : categories.map((c) => {
+              const count = products.filter((p) => p.categoryId === c.id).length
+              const isConfirming = confirmDeleteId === c.id
+              return (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, gap: 8 }}>
+                  <span style={{ fontWeight: 500 }}>{c.name} {count > 0 && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({count} items)</span>}</span>
+                  {isConfirming ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: 'var(--error)' }}>Remove?</span>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(c.id)}>Yes, Delete</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDeleteId(c.id)} aria-label={`Delete ${c.name}`}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
         <div className="modal-footer">

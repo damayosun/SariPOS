@@ -67,8 +67,16 @@ const stockMovementSchema = z.object({
 })
 
 const settingsSchema = z.object({
-  id: z.literal('singleton'),
+  id: z.string().min(1),
   storeName: z.string().min(1).max(80),
+  tagline: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  contactNumber: z.string().nullable().optional(),
+  permitNumber: z.string().nullable().optional(),
+  footerNote: z.string().nullable().optional(),
+  receiptPrefix: z.string().nullable().optional(),
+  paperWidth: z.enum(['58mm', '80mm']).optional(),
+  lowStockThreshold: z.number().int().positive().optional(),
   lastReceiptSeq: z.number().int().nonnegative(),
   lastBackupAt: z.number().int().nullable(),
   createdAt: z.number().int().nonnegative(),
@@ -76,7 +84,7 @@ const settingsSchema = z.object({
 })
 
 const schemaMetaSchema = z.object({
-  id: z.literal('singleton'),
+  id: z.string().min(1),
   schemaVersion: z.number().int().positive(),
   createdAt: z.number().int().nonnegative(),
 })
@@ -106,13 +114,13 @@ export async function exportBackup(): Promise<BackupData> {
     db.settings.toArray(),
     db.schemaMeta.toArray(),
   ])
-  const meta = schemaMeta[0] ?? {
-    id: 'singleton' as const,
+  const meta: SchemaMeta = schemaMeta[0] ?? {
+    id: 'singleton',
     schemaVersion: SCHEMA_VERSION,
     createdAt: Date.now(),
   }
-  const settingsRecord = settings[0] ?? {
-    id: 'singleton' as const,
+  const settingsRecord: Settings = settings[0] ?? {
+    id: 'singleton',
     storeName: 'My Sari-Sari Store',
     lastReceiptSeq: 0,
     lastBackupAt: null,
@@ -127,8 +135,8 @@ export async function exportBackup(): Promise<BackupData> {
     sales: sales as Sale[],
     saleItems: saleItems as SaleItem[],
     stockMovements: stockMovements as StockMovement[],
-    settings: settingsRecord as Settings,
-    schemaMeta: meta as SchemaMeta,
+    settings: settingsRecord,
+    schemaMeta: meta,
   }
 }
 
@@ -157,7 +165,7 @@ export async function restoreBackup(data: unknown): Promise<RestoreResult> {
       return {
         success: false,
         counts: { products: 0, categories: 0, sales: 0, saleItems: 0, stockMovements: 0 },
-        error: e.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join('; '),
+        error: e.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join('; '),
       }
     }
     return {
@@ -171,13 +179,15 @@ export async function restoreBackup(data: unknown): Promise<RestoreResult> {
 
   await db.transaction(
     'rw',
-    db.products,
-    db.categories,
-    db.sales,
-    db.saleItems,
-    db.stockMovements,
-    db.settings,
-    db.schemaMeta,
+    [
+      db.products,
+      db.categories,
+      db.sales,
+      db.saleItems,
+      db.stockMovements,
+      db.settings,
+      db.schemaMeta,
+    ],
     async () => {
       await Promise.all([
         db.products.clear(),

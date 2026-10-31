@@ -98,7 +98,7 @@ export async function checkout(
 
       const saleId = generateId()
       const receiptSeq = settings.lastReceiptSeq + 1
-      const receiptNo = generateReceiptNo(receiptSeq)
+      const receiptNo = generateReceiptNo(receiptSeq, settings.receiptPrefix || 'R')
       const now = Date.now()
 
       const items: SaleItem[] = []

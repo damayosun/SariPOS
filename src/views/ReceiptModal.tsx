@@ -47,10 +47,21 @@ export function ReceiptModal({ saleId, onClose }: { saleId: string; onClose: () 
                 <CheckCircle />
                 <span>Sale saved successfully. Receipt #{sale.receiptNo}</span>
               </div>
-              <div className="receipt">
+              <div className={`receipt ${settings.paperWidth === '80mm' ? 'receipt-80mm' : 'receipt-58mm'}`}>
                 <div className="receipt-header">
                   <div className="store">{settings.storeName}</div>
-                  <div style={{ fontSize: 11 }}>Sari-Sari Store Receipt</div>
+                  {settings.tagline && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{settings.tagline}</div>}
+                  {settings.address && <div style={{ fontSize: 11, marginTop: 2 }}>{settings.address}</div>}
+                  {settings.contactNumber && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      Tel/GCash: {settings.contactNumber}
+                    </div>
+                  )}
+                  {settings.permitNumber && (
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                      Permit/TIN: {settings.permitNumber}
+                    </div>
+                  )}
                 </div>
                 <div className="receipt-meta">
                   <span>{sale.receiptNo}</span>
@@ -77,8 +88,8 @@ export function ReceiptModal({ saleId, onClose }: { saleId: string; onClose: () 
                   <span>Change</span>
                   <span>{formatMoney(sale.changeCentavos)}</span>
                 </div>
-                <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', paddingTop: 4 }}>
-                  Thank you!
+                <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', paddingTop: 6, borderTop: '1px dashed var(--border)', marginTop: 4 }}>
+                  {settings.footerNote || 'Salamat sa inyong pagbili! Balik po kayo muli.'}
                 </div>
               </div>
             </>

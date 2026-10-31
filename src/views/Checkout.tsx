@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Search, Plus, Minus, Trash2, ShoppingCart, AlertCircle } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, AlertCircle, Package } from 'lucide-react'
 import type { Category, Product } from '../lib/types'
 import { searchProducts, getAllCategories } from '../lib/productService'
 import { formatMoney, toCentavos, calcLineTotal, calcChange, isCashSufficient } from '../lib/money'
 import { checkout, type CartLine, validateCart } from '../lib/salesService'
 import { nextAttemptId } from '../lib/id'
 import { getStockStatus } from '../lib/stockStatus'
+import { getSettings } from '../lib/settingsService'
 import { ReceiptModal } from './ReceiptModal'
 import type { Tab } from '../App'
 
@@ -14,6 +15,7 @@ type CartItem = CartLine & { stockAvailable: number }
 export function Checkout({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(10)
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
@@ -23,9 +25,16 @@ export function Checkout({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [receiptSaleId, setReceiptSaleId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
-    const [prods, cats] = await Promise.all([searchProducts(query, activeCategory), getAllCategories()])
+    const [prods, cats, st] = await Promise.all([
+      searchProducts(query, activeCategory),
+      getAllCategories(),
+      getSettings().catch(() => null),
+    ])
     setProducts(prods)
     setCategories(cats)
+    if (st?.lowStockThreshold) {
+      setLowStockThreshold(st.lowStockThreshold)
+    }
   }, [query, activeCategory])
 
   useEffect(() => {
@@ -96,6 +105,24 @@ export function Checkout({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
           return l
         }
         return { ...l, quantity: newQty }
+      }),
+    )
+  }
+
+  const setDirectQty = (productId: string, val: string) => {
+    setError('')
+    const num = parseInt(val, 10)
+    setCart((prev) =>
+      prev.map((l) => {
+        if (l.productId !== productId) return l
+        if (isNaN(num) || num <= 0) {
+          return { ...l, quantity: 1 }
+        }
+        if (num > l.stockAvailable) {
+          setError(`Only ${l.stockAvailable} ${l.productName} in stock.`)
+          return { ...l, quantity: l.stockAvailable }
+        }
+        return { ...l, quantity: num }
       }),
     )
   }
@@ -192,7 +219,7 @@ export function Checkout({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
         ) : (
           <div className="product-grid">
             {products.map((p) => {
-              const stock = getStockStatus(p.stock)
+              const stock = getStockStatus(p.stock, lowStockThreshold)
               return (
                 <button
                   key={p.id}
@@ -249,7 +276,17 @@ export function Checkout({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
                   >
                     <Minus size={16} />
                   </button>
-                  <span className="qty-display">{item.quantity}</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    max={item.stockAvailable}
+                    className="qty-input"
+                    value={item.quantity}
+                    onChange={(e) => setDirectQty(item.productId, e.target.value)}
+                    aria-label={`Quantity for ${item.productName}`}
+                    title="Directly edit quantity"
+                  />
                   <button
                     className="qty-btn"
                     onClick={() => changeQty(item.productId, 1)}

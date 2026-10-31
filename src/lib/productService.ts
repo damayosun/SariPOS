@@ -172,5 +172,5 @@ export async function searchCategories(query: string): Promise<Category[]> {
   return all.filter((c) => c.name.toLowerCase().includes(q))
 }
 
-export { SariPOSDB }
+export type { SariPOSDB }
 export type { SariPOSDB as SariPOSDBType }

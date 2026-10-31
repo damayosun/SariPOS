@@ -57,8 +57,16 @@ export type StockMovement = {
 }
 
 export type Settings = {
-  id: string
+  id: 'singleton' | string
   storeName: string
+  tagline?: string | null
+  address?: string | null
+  contactNumber?: string | null
+  permitNumber?: string | null
+  footerNote?: string | null
+  receiptPrefix?: string | null
+  paperWidth?: '58mm' | '80mm'
+  lowStockThreshold?: number
   lastReceiptSeq: number
   lastBackupAt: number | null
   createdAt: number
@@ -66,7 +74,7 @@ export type Settings = {
 }
 
 export type SchemaMeta = {
-  id: string
+  id: 'singleton' | string
   schemaVersion: number
   createdAt: number
 }

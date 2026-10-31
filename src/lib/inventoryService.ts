@@ -1,5 +1,5 @@
 import { getDb } from './db'
-import { generateId, clampNonNegativeInt } from './id'
+import { generateId } from './id'
 import type { StockMovement } from './types'
 
 export async function stockIn(productId: string, quantity: number, reason: string): Promise<StockMovement> {

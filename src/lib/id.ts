@@ -9,10 +9,11 @@ export function generateId(): string {
 
 let receiptCounter = 0
 
-export function generateReceiptNo(seq: number): string {
+export function generateReceiptNo(seq: number, prefix: string = 'R'): string {
   const d = new Date()
   const ymd = `${d.getFullYear()}${(d.getMonth() + 1).toString().padStart(2, '0')}${d.getDate().toString().padStart(2, '0')}`
-  return `R-${ymd}-${seq.toString().padStart(4, '0')}`
+  const p = (prefix?.trim() || 'R').toUpperCase()
+  return `${p}-${ymd}-${seq.toString().padStart(4, '0')}`
 }
 
 export function nextAttemptId(): string {

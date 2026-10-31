@@ -1,0 +1,8 @@
+{
+  "name": "SariPOS",
+  "description": "Offline point-of-sale for sari-sari stores in the Philippines with local-first IndexedDB storage, receipt generation, inventory reconciliation, and PWA support.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
